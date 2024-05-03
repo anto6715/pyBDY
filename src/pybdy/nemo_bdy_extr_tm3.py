@@ -371,6 +371,9 @@ class Extract:
             dst_dep_rv = dst_dep.ravel(order="F")
             z_ind = np.zeros((num_bdy * dst_len_z, 2), dtype=np.int64)
             source_tree = None
+            for dps in range(1,len(dst_dep_rv)):
+                if(np.isfinite(dst_dep_rv[dps])==False):
+                    dst_dep_rv[dps]=dst_dep_rv[dps-1]
             try:
                 source_tree = sp.cKDTree(
                     list(zip(sc_z.ravel(order="F"))),
@@ -948,7 +951,8 @@ class Extract:
         year -- input year
         month -- input month
         """
-        vals = {"gregorian": 365.0 + isleap(year), "noleap": 365.0, "360_day": 360.0}
+        #vals = {"gregorian": 365.0 + isleap(year), "noleap": 365.0, "360_day": 360.0}
+        vals = {"gregorian": 365.0 + isleap(year), "noleap": 365.0, "360_day": 360.0,'standard':365.}
         if source not in list(vals.keys()):
             raise ValueError("Unknown source calendar type: %s" % source)
         # Get month length
@@ -1028,6 +1032,7 @@ class Extract:
         else:
             varnams = self.var_nam
 
+        del_t1=(date_end-date_000)/2
         if del_t >= 86400.0:
             for v in varnams:
                 intfn = interp1d(
@@ -1037,9 +1042,10 @@ class Extract:
                     bounds_error=True,
                 )
                 self.d_bdy[v][year]["data"] = intfn(
-                    np.arange(time_000, time_end, 86400)
-                )
-                self.time_counter = np.arange(time_000, time_end, 86400)
+                    np.array([time_counter[1]]))
+                #    np.arange(time_000, time_end, 86400)
+                #)
+                self.time_counter = np.array([time_counter[1]]) #np.arange(time_000, time_end, 86400)
         else:
             for v in varnams:
                 for t in range(dstep):
@@ -1050,8 +1056,9 @@ class Extract:
                         bounds_error=True,
                     )
                     self.d_bdy[v].data[t::dstep, :, :] = intfn(
-                        np.arange(time_000, time_end, 86400)
-                    )
+                        np.arange(time_000,time_000))
+                    #    np.arange(time_000, time_end, 86400)
+                    #)
         # self.time_counter = time_counter
 
     #        self.time_counter = len(self.d_bdy[v][year]['data'][:,0,0])
